@@ -119,6 +119,13 @@ jobs:
           SOROBAN_SECRET_KEY: ${{ secrets.SOROBAN_SECRET_KEY }}
         timeout-minutes: 30
 
+      - name: Ensure deployment manifest exists
+        if: always()
+        run: |
+          if [ ! -f ".deployment-manifest.json" ]; then
+            echo '{"version":"1.0","deployments":[],"last_updated":null,"validation_status":"skipped"}' > .deployment-manifest.json
+          fi
+
       - name: Upload deployment manifest
         if: always()
         uses: actions/upload-artifact@v4
@@ -126,6 +133,13 @@ jobs:
           name: deployment-manifest-${{ github.run_id }}
           path: .deployment-manifest.json
           retention-days: 30
+
+      - name: Ensure deployment log exists
+        if: always()
+        run: |
+          if [ ! -f ".deployment.log" ]; then
+            touch .deployment.log
+          fi
 
       - name: Upload deployment log
         if: always()
