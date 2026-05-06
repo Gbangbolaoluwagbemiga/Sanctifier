@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 soroban-sdk = { workspace = true }
-sanctifier-core = { path = "../../tooling/sanctifier-core" }
+sanctifier-core = { path = "../../tooling/sanctifier-core", default-features = false }
 
 [lib]
 crate-type = ["cdylib"]
