@@ -122,8 +122,8 @@ jobs:
       - name: Ensure deployment manifest exists
         if: always()
         run: |
-          if [ ! -f ".deployment-manifest.json" ]; then
-            echo '{"version":"1.0","deployments":[],"last_updated":null,"validation_status":"skipped"}' > .deployment-manifest.json
+          if [ ! -f "deployment-manifest.json" ]; then
+            echo '{"version":"1.0","deployments":[],"last_updated":null,"validation_status":"skipped"}' > deployment-manifest.json
           fi
 
       - name: Upload deployment manifest
@@ -131,14 +131,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deployment-manifest-${{ github.run_id }}
-          path: .deployment-manifest.json
+          path: deployment-manifest.json
           retention-days: 30
 
       - name: Ensure deployment log exists
         if: always()
         run: |
-          if [ ! -f ".deployment.log" ]; then
-            touch .deployment.log
+          if [ ! -f "deployment.log" ]; then
+            touch deployment.log
           fi
 
       - name: Upload deployment log
@@ -146,19 +146,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deployment-log-${{ github.run_id }}
-          path: .deployment.log
+          path: deployment.log
           retention-days: 30
 
       - name: Parse deployment results
         if: always()
         run: |
-          if [ -f ".deployment-manifest.json" ]; then
+          if [ -f "deployment-manifest.json" ]; then
             echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             jq '.deployments[] | "- **\(.name)**: `\(.contract_id)` (\(.status))"' \
-              .deployment-manifest.json >> $GITHUB_STEP_SUMMARY
+              deployment-manifest.json >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Last updated: $(jq -r '.last_updated' .deployment-manifest.json)" >> $GITHUB_STEP_SUMMARY
+            echo "Last updated: $(jq -r '.last_updated' deployment-manifest.json)" >> $GITHUB_STEP_SUMMARY
           fi
 
   continuous-validation:
@@ -189,8 +189,8 @@ jobs:
         run: |
           echo "Running continuous validation checks..."
           
-          if [ -f ".deployment-manifest.json" ]; then
-            CONTRACTS=$(jq -r '.deployments[].contract_id' .deployment-manifest.json)
+          if [ -f "deployment-manifest.json" ]; then
+            CONTRACTS=$(jq -r '.deployments[].contract_id' deployment-manifest.json)
             
             for CONTRACT_ID in $CONTRACTS; do
               echo ""

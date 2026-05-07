@@ -24,8 +24,8 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CONTRACTS_DIR="${PROJECT_ROOT}/contracts"
-DEPLOYMENT_LOG="${PROJECT_ROOT}/.deployment.log"
-DEPLOYMENT_MANIFEST="${PROJECT_ROOT}/.deployment-manifest.json"
+DEPLOYMENT_LOG="${PROJECT_ROOT}/deployment.log"
+DEPLOYMENT_MANIFEST="${PROJECT_ROOT}/deployment-manifest.json"
 TEMP_DIR=$(mktemp -d)
 
 # Default values
