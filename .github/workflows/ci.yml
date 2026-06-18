@@ -59,6 +59,17 @@ jobs:
           cargo test -p sanctifier-core --all-features
           cd tooling/sanctifier-cli && cargo test
 
+      - name: Install cargo-insta
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-insta
+
+      - name: Detector golden snapshots (insta)
+        # Fails the build if any detector's findings differ from its reviewed
+        # snapshot. Regenerate locally with `cargo insta test` then review with
+        # `cargo insta review` (see tooling/sanctifier-core/tests/README.md).
+        run: cargo insta test -p sanctifier-core --all-features --check --unreferenced reject
+
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin || true
 
