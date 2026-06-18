@@ -314,9 +314,7 @@ mod tests {
         "#;
         let violations = rule.check(source);
         assert!(!violations.is_empty());
-        assert!(violations
-            .iter()
-            .any(|v| v.message.contains("amount > 0")));
+        assert!(violations.iter().any(|v| v.message.contains("amount > 0")));
     }
 
     #[test]
@@ -335,9 +333,7 @@ mod tests {
         "#;
         let violations = rule.check(source);
         assert!(!violations.is_empty());
-        assert!(violations
-            .iter()
-            .any(|v| v.message.contains("from != to")));
+        assert!(violations.iter().any(|v| v.message.contains("from != to")));
     }
 
     #[test]

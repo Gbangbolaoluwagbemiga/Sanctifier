@@ -94,7 +94,8 @@ pub fn all_finding_codes() -> Vec<FindingCode> {
         FindingCode {
             code: DEPRECATED_SDK,
             category: "code_hygiene",
-            description: "Deprecated soroban-sdk host function with suggested replacement available",
+            description:
+                "Deprecated soroban-sdk host function with suggested replacement available",
         },
         FindingCode {
             code: DEAD_CODE,

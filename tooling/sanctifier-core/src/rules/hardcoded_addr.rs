@@ -17,21 +17,27 @@ impl HardcodedAddrRule {
         // and are 56 characters long (base32 encoded)
         if s.len() == 56 && (s.starts_with('G') || s.starts_with('S')) {
             // Check if it's all uppercase alphanumeric (base32)
-            return s.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit());
+            return s
+                .chars()
+                .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit());
         }
-        
+
         // Also check for hex-encoded addresses (64 hex chars)
         if s.len() == 64 && s.chars().all(|c| c.is_ascii_hexdigit()) {
             return true;
         }
-        
+
         // Check for common secret patterns
-        if s.contains("secret") || s.contains("SECRET") || s.contains("admin") || s.contains("ADMIN") {
+        if s.contains("secret")
+            || s.contains("SECRET")
+            || s.contains("admin")
+            || s.contains("ADMIN")
+        {
             if s.len() > 20 {
                 return true;
             }
         }
-        
+
         false
     }
 
@@ -110,7 +116,11 @@ impl<'ast> Visit<'ast> for HardcodedAddrVisitor {
             syn::Lit::Str(lit_str) => {
                 let value = lit_str.value();
                 if HardcodedAddrRule::is_address_like(&value) {
-                    let fn_name = self.current_fn.as_ref().map(|s| s.as_str()).unwrap_or("unknown");
+                    let fn_name = self
+                        .current_fn
+                        .as_ref()
+                        .map(|s| s.as_str())
+                        .unwrap_or("unknown");
                     let is_auth = HardcodedAddrRule::is_auth_context(&self.current_fn);
                     let severity = if is_auth {
                         Severity::Error
@@ -119,7 +129,8 @@ impl<'ast> Visit<'ast> for HardcodedAddrVisitor {
                     };
 
                     let message = if value.starts_with('S') {
-                        "Hardcoded secret key detected - never hardcode secrets in source code".to_string()
+                        "Hardcoded secret key detected - never hardcode secrets in source code"
+                            .to_string()
                     } else if value.starts_with('G') {
                         "Hardcoded Stellar address detected in authentication context".to_string()
                     } else if value.contains("secret") || value.contains("SECRET") {
@@ -136,7 +147,8 @@ impl<'ast> Visit<'ast> for HardcodedAddrVisitor {
                             format!("{}:{}", fn_name, node.span().start().line),
                         )
                         .with_suggestion(
-                            "Store sensitive values in contract storage or pass as parameters".to_string()
+                            "Store sensitive values in contract storage or pass as parameters"
+                                .to_string(),
                         ),
                     );
                 }
@@ -146,9 +158,13 @@ impl<'ast> Visit<'ast> for HardcodedAddrVisitor {
                 let bytes = lit_bytes.value();
                 // Stellar addresses are 32 bytes, Ed25519 keys are 32 bytes
                 if bytes.len() == 32 || bytes.len() == 56 || bytes.len() == 64 {
-                    let fn_name = self.current_fn.as_ref().map(|s| s.as_str()).unwrap_or("unknown");
+                    let fn_name = self
+                        .current_fn
+                        .as_ref()
+                        .map(|s| s.as_str())
+                        .unwrap_or("unknown");
                     let is_auth = HardcodedAddrRule::is_auth_context(&self.current_fn);
-                    
+
                     if is_auth {
                         self.issues.push(
                             RuleViolation::new(

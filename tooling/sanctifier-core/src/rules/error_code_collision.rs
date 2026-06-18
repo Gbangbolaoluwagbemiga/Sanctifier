@@ -118,7 +118,8 @@ impl Rule for ErrorCodeCollisionRule {
                                 format!("{}:{}", enum_name, enum_item.span().start().line),
                             )
                             .with_suggestion(
-                                "Assign explicit unique discriminants to all error variants".to_string()
+                                "Assign explicit unique discriminants to all error variants"
+                                    .to_string(),
                             ),
                         );
                     }
@@ -146,7 +147,7 @@ impl Rule for ErrorCodeCollisionRule {
                 if implicit_discriminants.is_empty() && explicit_discriminants.len() > 1 {
                     let mut values: Vec<i64> = explicit_discriminants.iter().copied().collect();
                     values.sort_unstable();
-                    
+
                     for i in 0..values.len() - 1 {
                         if values[i + 1] - values[i] > 1 {
                             violations.push(
@@ -211,7 +212,9 @@ mod tests {
         "#;
         let violations = rule.check(source);
         assert!(!violations.is_empty());
-        assert!(violations.iter().any(|v| v.message.contains("Inconsistent")));
+        assert!(violations
+            .iter()
+            .any(|v| v.message.contains("Inconsistent")));
     }
 
     #[test]

@@ -31,7 +31,9 @@ fn test_hardcoded_addr_detects_violations() {
 
     // Secret key should be Error severity
     assert!(
-        secret_violations.iter().any(|v| v.severity == Severity::Error),
+        secret_violations
+            .iter()
+            .any(|v| v.severity == Severity::Error),
         "Secret key should be Error severity"
     );
 }
@@ -43,9 +45,7 @@ fn test_hardcoded_addr_allows_clean_code() {
 
     // Should not flag the clean initialize function that takes admin as parameter
     assert!(
-        !violations
-            .iter()
-            .any(|v| v.location.contains("initialize")),
+        !violations.iter().any(|v| v.location.contains("initialize")),
         "Clean code should not trigger hardcoded address violations"
     );
 }
@@ -78,8 +78,9 @@ fn test_error_code_collision_detects_inconsistent_style() {
 
     // Should detect inconsistent style in ErrorInconsistent
     assert!(
-        violations.iter().any(|v| v.message.contains("Inconsistent")
-            && v.message.contains("ErrorInconsistent")),
+        violations
+            .iter()
+            .any(|v| v.message.contains("Inconsistent") && v.message.contains("ErrorInconsistent")),
         "Should detect inconsistent discriminant style"
     );
 }
@@ -194,7 +195,9 @@ fn test_hygiene_rules_respect_severity_levels() {
         .filter(|v| v.message.contains("secret") || v.message.contains("Secret"))
         .collect();
     assert!(
-        secret_violations.iter().any(|v| v.severity == Severity::Error),
+        secret_violations
+            .iter()
+            .any(|v| v.severity == Severity::Error),
         "Secret key violations should be Error severity"
     );
 }
