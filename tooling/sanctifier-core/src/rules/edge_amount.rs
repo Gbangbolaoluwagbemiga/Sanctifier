@@ -76,7 +76,11 @@ impl EdgeAmountRule {
                 // Check for comparisons with amount
                 matches!(
                     bin.op,
-                    syn::BinOp::Gt(_) | syn::BinOp::Lt(_) | syn::BinOp::Ne(_) | syn::BinOp::Ge(_)
+                    syn::BinOp::Gt(_)
+                        | syn::BinOp::Lt(_)
+                        | syn::BinOp::Le(_)
+                        | syn::BinOp::Ne(_)
+                        | syn::BinOp::Ge(_)
                 ) && (Self::expr_mentions_ident(&bin.left, "amount")
                     || Self::expr_mentions_ident(&bin.right, "amount"))
             }
@@ -89,7 +93,11 @@ impl EdgeAmountRule {
             syn::Expr::Binary(bin) => {
                 matches!(
                     bin.op,
-                    syn::BinOp::Gt(_) | syn::BinOp::Lt(_) | syn::BinOp::Ne(_) | syn::BinOp::Ge(_)
+                    syn::BinOp::Gt(_)
+                        | syn::BinOp::Lt(_)
+                        | syn::BinOp::Le(_)
+                        | syn::BinOp::Ne(_)
+                        | syn::BinOp::Ge(_)
                 ) && (Self::expr_mentions_ident(&bin.left, "amount")
                     || Self::expr_mentions_ident(&bin.right, "amount"))
             }
