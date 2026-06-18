@@ -456,9 +456,32 @@ impl Analyzer {
 
     #[cfg(feature = "smt")]
     fn verify_smt_invariants_impl(&self) -> Vec<smt::SmtInvariantIssue> {
-        // In a full implementation, this would dynamically parse the AST to extract invariants.
-        // For now, we return an empty vector to avoid false positives in general analysis.
-        Vec::new()
+        use z3::{Config, Context};
+        let cfg = Config::new();
+        let ctx = Context::new(&cfg);
+        let prover = smt::SmtProver::new(&ctx);
+
+        smt::TokenInvariant::all()
+            .iter()
+            .filter_map(|inv| {
+                let result = prover.prove_invariant(inv);
+                if result.status == smt::ProofStatus::Violated {
+                    let desc = match &result.counterexample {
+                        Some(ce) => {
+                            format!("{} Counterexample: {}", result.message, ce.call_sequence)
+                        }
+                        None => result.message.clone(),
+                    };
+                    Some(smt::SmtInvariantIssue {
+                        function_name: result.invariant.clone(),
+                        description: desc,
+                        location: "token contract (abstract model)".to_string(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn scan_gas_estimation(&self, source: &str) -> Vec<gas_estimator::GasEstimationReport> {
