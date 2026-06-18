@@ -124,7 +124,7 @@ impl Default for SmtInvariantVerifier {
 #[cfg(feature = "smt")]
 impl SmtInvariantVerifier {
     pub fn new() -> Self {
-        SmtInvariantVerifier::default()
+        SmtInvariantVerifier
     }
 
     /// Try to verify a single invariant declaration.
