@@ -117,6 +117,8 @@ Looking for Soroban security tools, audit reports, incident post-mortems, and le
 ## ðŸ¤ Contributing
 We welcome contributions from the Stellar community! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
+Every detector is covered by a golden `insta` snapshot so its findings can't regress unnoticed. If you add or change a detector, regenerate and review the snapshots — see [tooling/sanctifier-core/tests/README.md](tooling/sanctifier-core/tests/README.md).
+
 ## ðŸ”Ž Finding Codes
 Unified finding codes (`S001`...`S007`) are documented in [docs/error-codes.md](docs/error-codes.md).
 
