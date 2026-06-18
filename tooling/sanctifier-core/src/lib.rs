@@ -438,6 +438,9 @@ impl Analyzer {
     ///
     /// `file_label` is embedded in each declaration's `location` field and
     /// should be the file path (or any stable identifier) for error messages.
+    ///
+    /// Returns an empty `Vec` when `source` fails to parse as valid Rust.
+    /// Panics inside the visitor are caught and turned into an empty result.
     pub fn scan_invariant_attrs(
         &self,
         source: &str,
