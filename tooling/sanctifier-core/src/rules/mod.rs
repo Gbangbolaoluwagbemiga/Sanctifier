@@ -1,5 +1,8 @@
 pub mod arithmetic_overflow;
 pub mod auth_gap;
+pub mod edge_amount;
+pub mod error_code_collision;
+pub mod hardcoded_addr;
 pub mod ledger_size;
 pub mod panic_detection;
 pub mod unhandled_result;
@@ -116,6 +119,10 @@ impl RuleRegistry {
         registry.register(arithmetic_overflow::ArithmeticOverflowRule::new());
         registry.register(unhandled_result::UnhandledResultRule::new());
         registry.register(unused_variable::UnusedVariableRule::new());
+        // New hygiene rules
+        registry.register(hardcoded_addr::HardcodedAddrRule::new());
+        registry.register(error_code_collision::ErrorCodeCollisionRule::new());
+        registry.register(edge_amount::EdgeAmountRule::new());
         registry
     }
 }

@@ -11,6 +11,11 @@ pub const EVENT_INCONSISTENCY: &str = "S008";
 pub const UNHANDLED_RESULT: &str = "S009";
 pub const UPGRADE_RISK: &str = "S010";
 pub const SMT_INVARIANT_VIOLATION: &str = "S011";
+pub const HARDCODED_ADDR: &str = "S012";
+pub const EDGE_AMOUNT: &str = "S013";
+pub const DEPRECATED_SDK: &str = "S014";
+pub const DEAD_CODE: &str = "S015";
+pub const ERROR_CODE_COLLISION: &str = "S016";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FindingCode {
@@ -75,6 +80,32 @@ pub fn all_finding_codes() -> Vec<FindingCode> {
             code: SMT_INVARIANT_VIOLATION,
             category: "formal_verification",
             description: "Formal verification (Z3) proved a mathematical violation of an invariant",
+        },
+        FindingCode {
+            code: HARDCODED_ADDR,
+            category: "code_hygiene",
+            description: "Hardcoded admin address or secret literal used in authentication context",
+        },
+        FindingCode {
+            code: EDGE_AMOUNT,
+            category: "code_hygiene",
+            description: "Transfer/mint/burn missing amount>0 or from!=to validation guards",
+        },
+        FindingCode {
+            code: DEPRECATED_SDK,
+            category: "code_hygiene",
+            description:
+                "Deprecated soroban-sdk host function with suggested replacement available",
+        },
+        FindingCode {
+            code: DEAD_CODE,
+            category: "code_hygiene",
+            description: "Dead code or always-true guard condition detected via constant folding",
+        },
+        FindingCode {
+            code: ERROR_CODE_COLLISION,
+            category: "code_hygiene",
+            description: "Inconsistent or duplicate discriminants in #[contracterror] enum",
         },
     ]
 }
