@@ -78,7 +78,7 @@ fn impl_self_name(node: &ItemImpl) -> String {
 }
 
 /// A `#[sanctify::invariant(EXPR)]` declaration extracted from a source file.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct InvariantDecl {
     /// Name of the `impl` self-type the attribute was placed on.
     pub contract_name: String,
