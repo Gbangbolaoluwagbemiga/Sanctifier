@@ -107,7 +107,7 @@ fn resolve_invariants(s: &str) -> anyhow::Result<Vec<TokenInvariant>> {
     if s == "all" {
         return Ok(TokenInvariant::all());
     }
-    TokenInvariant::from_str(s)
+    TokenInvariant::parse(s)
         .map(|i| vec![i])
         .ok_or_else(|| {
             anyhow::anyhow!(

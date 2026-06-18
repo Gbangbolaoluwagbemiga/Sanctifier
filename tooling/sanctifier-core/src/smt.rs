@@ -80,7 +80,7 @@ impl TokenInvariant {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s {
             "balance_non_negative" => Some(TokenInvariant::BalanceNonNegative),
             "supply_conserved" => Some(TokenInvariant::SupplyConserved),
@@ -496,6 +496,38 @@ pub fn run_smt_latency_benchmark(iterations_per_strategy: usize) -> SmtLatencyBe
     }
 }
 
+fn run_strategy(ctx: &Context, strategy: SmtProofStrategy) -> SatResult {
+    let solver = Solver::new(ctx);
+    let a = Int::new_const(ctx, "a");
+    let b = Int::new_const(ctx, "b");
+    let zero = Int::from_i64(ctx, 0);
+    let max_u64 = Int::from_u64(ctx, u64::MAX);
+
+    solver.assert(&a.ge(&zero));
+    solver.assert(&b.ge(&zero));
+
+    match strategy {
+        SmtProofStrategy::UnconstrainedOverflow => {
+            solver.assert(&a.le(&max_u64));
+            solver.assert(&b.le(&max_u64));
+        }
+        SmtProofStrategy::BoundedDomainOverflow => {
+            let max = Int::from_i64(ctx, 5_000_000_000);
+            solver.assert(&a.le(&max));
+            solver.assert(&b.le(&max));
+        }
+        SmtProofStrategy::SmallDomainOverflow => {
+            let max = Int::from_i64(ctx, 10_000);
+            solver.assert(&a.le(&max));
+            solver.assert(&b.le(&max));
+        }
+    }
+
+    let sum = Int::add(ctx, &[&a, &b]);
+    solver.assert(&sum.gt(&max_u64));
+    solver.check()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -553,14 +585,14 @@ mod tests {
     fn token_invariant_round_trips_str() {
         for inv in TokenInvariant::all() {
             let s = inv.as_str();
-            let back = TokenInvariant::from_str(s).expect("round-trip must succeed");
+            let back = TokenInvariant::parse(s).expect("round-trip must succeed");
             assert_eq!(inv, back);
         }
     }
 
     #[test]
     fn token_invariant_unknown_str_returns_none() {
-        assert!(TokenInvariant::from_str("nonexistent_invariant").is_none());
+        assert!(TokenInvariant::parse("nonexistent_invariant").is_none());
     }
 
     #[test]
@@ -588,36 +620,4 @@ mod tests {
             let _ = result.duration_ms;
         }
     }
-}
-
-fn run_strategy(ctx: &Context, strategy: SmtProofStrategy) -> SatResult {
-    let solver = Solver::new(ctx);
-    let a = Int::new_const(ctx, "a");
-    let b = Int::new_const(ctx, "b");
-    let zero = Int::from_i64(ctx, 0);
-    let max_u64 = Int::from_u64(ctx, u64::MAX);
-
-    solver.assert(&a.ge(&zero));
-    solver.assert(&b.ge(&zero));
-
-    match strategy {
-        SmtProofStrategy::UnconstrainedOverflow => {
-            solver.assert(&a.le(&max_u64));
-            solver.assert(&b.le(&max_u64));
-        }
-        SmtProofStrategy::BoundedDomainOverflow => {
-            let max = Int::from_i64(ctx, 5_000_000_000);
-            solver.assert(&a.le(&max));
-            solver.assert(&b.le(&max));
-        }
-        SmtProofStrategy::SmallDomainOverflow => {
-            let max = Int::from_i64(ctx, 10_000);
-            solver.assert(&a.le(&max));
-            solver.assert(&b.le(&max));
-        }
-    }
-
-    let sum = Int::add(ctx, &[&a, &b]);
-    solver.assert(&sum.gt(&max_u64));
-    solver.check()
 }
