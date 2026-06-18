@@ -36,6 +36,16 @@ pub fn burn_pure(balance: i128, amount: i128) -> Result<i128, &'static str> {
 /// Verify the core supply invariant in pure arithmetic:
 /// after any transfer, `from + to` equals the original `from + to`.
 /// This is the property `sanctifier verify` will report on and Kani will prove.
+///
+/// Returns `true` when the invariant holds. Invalid transfers (bad amount, overflow)
+/// are treated as no-ops so the invariant trivially holds for those inputs.
+///
+/// # Examples
+/// ```
+/// use token_invariants::pure::supply_is_conserved_after_transfer;
+/// assert!(supply_is_conserved_after_transfer(100, 50, 25));
+/// assert!(supply_is_conserved_after_transfer(100, 50, 0)); // invalid → no-op
+/// ```
 pub fn supply_is_conserved_after_transfer(from: i128, to: i128, amount: i128) -> bool {
     let original_sum = from.checked_add(to);
     match transfer_pure(from, to, amount) {
