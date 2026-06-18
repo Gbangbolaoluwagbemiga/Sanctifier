@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import type { AnalysisReport, CallGraphNode, CallGraphEdge, Finding, Severity } from "../types";
 import { transformReport, extractCallGraph } from "../lib/transform";
 import { exportToPdf } from "../lib/export-pdf";
@@ -10,7 +10,10 @@ import { SummaryChart } from "../components/SummaryChart";
 import { SanctityScore } from "../components/SanctityScore";
 import { CallGraph } from "../components/CallGraph";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { DashboardSkeleton } from "../components/LoadingSkeleton";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 const SAMPLE_JSON = `{
   "size_warnings": [],
@@ -30,9 +33,12 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [jsonInput, setJsonInput] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("findings");
+  const [isLoading, setIsLoading] = useState(false);
 
   const parseReport = useCallback((text: string) => {
     setError(null);
+    setIsLoading(true);
+    
     try {
       const parsed = JSON.parse(text || SAMPLE_JSON) as AnalysisReport;
 
@@ -50,6 +56,8 @@ export default function DashboardPage() {
       setFindings([]);
       setCallGraphNodes([]);
       setCallGraphEdges([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -60,11 +68,17 @@ export default function DashboardPage() {
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    setIsLoading(true);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       setJsonInput(text);
       parseReport(text);
+    };
+    reader.onerror = () => {
+      setError("Failed to read file");
+      setIsLoading(false);
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -73,121 +87,192 @@ export default function DashboardPage() {
   const hasData = findings.length > 0;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 theme-high-contrast:bg-black theme-high-contrast:text-white">
-      <header className="border-b border-zinc-200 dark:border-zinc-800 theme-high-contrast:border-b-white bg-white dark:bg-zinc-900 theme-high-contrast:bg-black px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+      <header 
+        className="border-b px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
+        role="banner"
+      >
         <div className="flex items-center gap-4 sm:gap-6">
-          <Link href="/" className="font-bold text-lg theme-high-contrast:text-yellow-300 whitespace-nowrap">
+          <Link 
+            href="/" 
+            className="font-bold text-lg whitespace-nowrap focus:outline-none focus:ring-2"
+            style={{ color: "var(--foreground)" }}
+          >
             Sanctifier
           </Link>
-          <span className="text-zinc-500 dark:text-zinc-400 theme-high-contrast:text-white text-sm sm:text-base">Security Dashboard</span>
+          <span className="text-sm sm:text-base" style={{ color: "var(--muted-foreground)" }}>
+            Security Dashboard
+          </span>
         </div>
-        <div className="flex items-center gap-4">
+        <nav className="flex items-center gap-4" aria-label="Main navigation">
           <Link
             href="/terminal"
-            className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50 transition-colors"
+            className="text-sm font-medium transition-colors focus:outline-none focus:ring-2"
+            style={{ color: "var(--muted-foreground)" }}
           >
             Live Terminal
           </Link>
           <ThemeToggle />
-        </div>
+        </nav>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-        <section className="rounded-lg border border-zinc-200 dark:border-zinc-800 theme-high-contrast:border-white bg-white dark:bg-zinc-900 theme-high-contrast:bg-black p-6">
-          <h2 className="text-lg font-semibold mb-4 theme-high-contrast:text-yellow-300">Load Analysis Report</h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 theme-high-contrast:text-white mb-4">
-            Paste JSON from <code className="bg-zinc-100 dark:bg-zinc-800 theme-high-contrast:bg-zinc-900 px-1 rounded">sanctifier analyze --format json</code> or upload a file.
+      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        <section 
+          className="rounded-lg border p-6"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
+        >
+          <h2 className="text-lg font-semibold mb-4">Load Analysis Report</h2>
+          <p className="text-sm mb-4" style={{ color: "var(--muted-foreground)" }}>
+            Paste JSON from{" "}
+            <code 
+              className="px-1 rounded font-mono text-xs"
+              style={{ backgroundColor: "var(--muted)" }}
+            >
+              sanctifier analyze --format json
+            </code>{" "}
+            or upload a file.
           </p>
           <div className="flex flex-wrap gap-2 sm:gap-4">
-            <label className="flex-1 sm:flex-none text-center cursor-pointer rounded-lg border border-zinc-300 dark:border-zinc-600 theme-high-contrast:border-white px-4 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 theme-high-contrast:hover:bg-zinc-900">
+            <label 
+              className="flex-1 sm:flex-none text-center cursor-pointer rounded-lg border px-4 py-2 text-sm transition-colors focus-within:ring-2"
+              style={{ borderColor: "var(--border)" }}
+            >
               Upload JSON
               <input
                 type="file"
                 accept=".json"
                 className="hidden"
                 onChange={handleFileUpload}
+                aria-label="Upload JSON file"
               />
             </label>
             <button
               onClick={loadReport}
-              className="flex-1 sm:flex-none rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 theme-high-contrast:bg-white theme-high-contrast:text-black px-4 py-2 text-sm font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 theme-high-contrast:hover:bg-zinc-300"
+              disabled={isLoading}
+              className="flex-1 sm:flex-none rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
+              }}
             >
-              Parse JSON
+              {isLoading ? "Parsing..." : "Parse JSON"}
             </button>
             <button
               onClick={() => {
                 exportToPdf(findings);
               }}
-              disabled={!hasData}
-              className="flex-1 sm:flex-none rounded-lg border border-zinc-300 dark:border-zinc-600 theme-high-contrast:border-white px-4 py-2 text-sm disabled:opacity-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 theme-high-contrast:hover:bg-zinc-900"
+              disabled={!hasData || isLoading}
+              className="flex-1 sm:flex-none rounded-lg border px-4 py-2 text-sm transition-colors disabled:opacity-50 focus:outline-none focus:ring-2"
+              style={{ borderColor: "var(--border)" }}
             >
               Export PDF
             </button>
           </div>
           {error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div
+              role="alert"
+              aria-live="polite"
+              className="mt-2 text-sm p-2 rounded"
+              style={{ color: "var(--destructive)" }}
+            >
+              {error}
+            </div>
           )}
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
             placeholder={SAMPLE_JSON}
-            className="mt-4 w-full h-32 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-950 p-3 font-mono text-sm focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600 outline-none"
+            className="mt-4 w-full h-32 rounded-lg border p-3 font-mono text-sm focus:ring-2 outline-none transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--background)",
+              color: "var(--foreground)",
+            }}
+            aria-label="JSON input"
           />
         </section>
 
-        {hasData && (
-          <>
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SanctityScore findings={findings} />
-              <SummaryChart findings={findings} />
-            </section>
+        {isLoading && <DashboardSkeleton />}
 
-            {/* Tab navigation */}
-            <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-700 theme-high-contrast:border-white">
-              <button
-                onClick={() => setActiveTab("findings")}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "findings"
-                    ? "border-zinc-900 dark:border-zinc-100 theme-high-contrast:border-yellow-300 text-zinc-900 dark:text-zinc-100 theme-high-contrast:text-yellow-300"
-                    : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 theme-high-contrast:text-white theme-high-contrast:hover:text-yellow-300"
-                  }`}
-              >
-                Findings
-              </button>
-              <button
-                onClick={() => setActiveTab("callgraph")}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "callgraph"
-                    ? "border-zinc-900 dark:border-zinc-100 theme-high-contrast:border-yellow-300 text-zinc-900 dark:text-zinc-100 theme-high-contrast:text-yellow-300"
-                    : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 theme-high-contrast:text-white theme-high-contrast:hover:text-yellow-300"
-                  }`}
-              >
-                Call Graph
-              </button>
-            </div>
-
-            {activeTab === "findings" && (
-              <>
-                <section>
-                  <h2 className="text-lg font-semibold mb-4">Filter by Severity</h2>
-                  <SeverityFilter selected={severityFilter} onChange={setSeverityFilter} />
-                </section>
-
-                <section>
-                  <h2 className="text-lg font-semibold mb-4">Findings</h2>
-                  <FindingsList findings={findings} severityFilter={severityFilter} />
-                </section>
-              </>
-            )}
-
-            {activeTab === "callgraph" && (
-              <section>
-                <CallGraph nodes={callGraphNodes} edges={callGraphEdges} />
+        {!isLoading && hasData && (
+          <ErrorBoundary>
+            <>
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SanctityScore findings={findings} />
+                <SummaryChart findings={findings} />
               </section>
-            )}
-          </>
+
+              {/* Tab navigation */}
+              <div 
+                className="flex gap-2 border-b"
+                style={{ borderColor: "var(--border)" }}
+                role="tablist"
+                aria-label="Report sections"
+              >
+                <button
+                  role="tab"
+                  aria-selected={activeTab === "findings"}
+                  aria-controls="findings-panel"
+                  id="findings-tab"
+                  onClick={() => setActiveTab("findings")}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2`}
+                  style={{
+                    borderColor: activeTab === "findings" ? "var(--primary)" : "transparent",
+                    color: activeTab === "findings" ? "var(--foreground)" : "var(--muted-foreground)",
+                  }}
+                >
+                  Findings
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={activeTab === "callgraph"}
+                  aria-controls="callgraph-panel"
+                  id="callgraph-tab"
+                  onClick={() => setActiveTab("callgraph")}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2`}
+                  style={{
+                    borderColor: activeTab === "callgraph" ? "var(--primary)" : "transparent",
+                    color: activeTab === "callgraph" ? "var(--foreground)" : "var(--muted-foreground)",
+                  }}
+                >
+                  Call Graph
+                </button>
+              </div>
+
+              {activeTab === "findings" && (
+                <div
+                  role="tabpanel"
+                  id="findings-panel"
+                  aria-labelledby="findings-tab"
+                >
+                  <section>
+                    <h2 className="text-lg font-semibold mb-4">Filter by Severity</h2>
+                    <SeverityFilter selected={severityFilter} onChange={setSeverityFilter} />
+                  </section>
+
+                  <section className="mt-8">
+                    <h2 className="text-lg font-semibold mb-4">Findings</h2>
+                    <FindingsList findings={findings} severityFilter={severityFilter} />
+                  </section>
+                </div>
+              )}
+
+              {activeTab === "callgraph" && (
+                <section
+                  role="tabpanel"
+                  id="callgraph-panel"
+                  aria-labelledby="callgraph-tab"
+                >
+                  <CallGraph nodes={callGraphNodes} edges={callGraphEdges} />
+                </section>
+              )}
+            </>
+          </ErrorBoundary>
         )}
 
-        {!hasData && !error && (
-          <p className="text-center text-zinc-500 dark:text-zinc-400 py-12">
+        {!isLoading && !hasData && !error && (
+          <p className="text-center py-12" style={{ color: "var(--muted-foreground)" }}>
             Load a report to view findings.
           </p>
         )}

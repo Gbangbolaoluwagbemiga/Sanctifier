@@ -14,8 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sanctifier | Security Dashboard",
-  description: "Visualize Soroban security analysis results",
+  title: "Sanctifier | Soroban Security Suite",
+  description: "Comprehensive security analysis and formal verification for Stellar Soroban smart contracts",
+  keywords: ["Stellar", "Soroban", "Security", "Smart Contracts", "Blockchain", "Formal Verification"],
+  authors: [{ name: "Sanctifier Team" }],
+  openGraph: {
+    title: "Sanctifier | Soroban Security Suite",
+    description: "Comprehensive security analysis and formal verification for Stellar Soroban smart contracts",
+    type: "website",
+    locale: "en_US",
+    siteName: "Sanctifier",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sanctifier | Soroban Security Suite",
+    description: "Comprehensive security analysis and formal verification for Stellar Soroban smart contracts",
+  },
 };
 
 export default function RootLayout({
@@ -28,6 +42,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
