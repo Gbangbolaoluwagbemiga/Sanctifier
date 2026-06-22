@@ -22,6 +22,8 @@ struct Cli {
 pub enum Commands {
     /// Analyze a Soroban contract for vulnerabilities
     Analyze(commands::analyze::AnalyzeArgs),
+    /// Snapshot current findings into .sanctify-baseline.json (use --update to refresh)
+    Baseline(commands::baseline::BaselineArgs),
     /// Generate (or verify) a zero-knowledge attestation that a scan passed a score threshold
     Attest(commands::attest::AttestArgs),
     /// Generate a dynamic Sanctifier status badge
@@ -71,6 +73,9 @@ fn main() -> anyhow::Result<()> {
                 branding::print_logo();
             }
             commands::analyze::exec(args)?;
+        }
+        Commands::Baseline(args) => {
+            commands::baseline::exec(args)?;
         }
         Commands::Attest(args) => {
             commands::attest::exec(args)?;
