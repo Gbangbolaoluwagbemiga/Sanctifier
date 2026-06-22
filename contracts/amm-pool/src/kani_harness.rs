@@ -3,8 +3,8 @@
 //! This module contains formal verification harnesses using Kani to prove
 //! critical mathematical and security properties of the AMM pool implementation.
 
-use kani::*;
 use super::*;
+use kani::*;
 
 /// Verify that swap calculations never overflow for any input values
 #[kani::proof]
@@ -22,7 +22,7 @@ fn verify_swap_no_overflow() {
 
     // This should either succeed or fail gracefully, never panic
     let result = AmmPool::calculate_swap_output(reserve_in, reserve_out, amount_in, fee_bps);
-    
+
     match result {
         Ok(output) => {
             // If successful, output should be reasonable
@@ -39,7 +39,7 @@ fn verify_swap_no_overflow() {
 #[kani::proof]
 fn verify_constant_product_invariant() {
     let reserve_in: u128 = any();
-    let reserve_out: u128 = any(); 
+    let reserve_out: u128 = any();
     let amount_in: u128 = any();
     let fee_bps: u128 = any();
 
@@ -49,15 +49,17 @@ fn verify_constant_product_invariant() {
     assume(amount_in >= 1 && amount_in <= 10000);
     assume(fee_bps <= 1000); // Max 10% fee
 
-    if let Ok(amount_out) = AmmPool::calculate_swap_output(reserve_in, reserve_out, amount_in, fee_bps) {
+    if let Ok(amount_out) =
+        AmmPool::calculate_swap_output(reserve_in, reserve_out, amount_in, fee_bps)
+    {
         // Calculate k before swap
         let k_before = reserve_in * reserve_out;
-        
+
         // Calculate k after swap
         let new_reserve_in = reserve_in + amount_in;
         let new_reserve_out = reserve_out - amount_out;
         let k_after = new_reserve_in * new_reserve_out;
-        
+
         // K should never decrease (should increase due to fees)
         assert!(k_after >= k_before);
     }
@@ -81,7 +83,8 @@ fn verify_liquidity_no_overflow() {
 
     // Test both initial and subsequent liquidity provision
     let result1 = AmmPool::calculate_liquidity_mint(0, 0, amount_a, amount_b, 0);
-    let result2 = AmmPool::calculate_liquidity_mint(reserve_a, reserve_b, amount_a, amount_b, total_supply);
+    let result2 =
+        AmmPool::calculate_liquidity_mint(reserve_a, reserve_b, amount_a, amount_b, total_supply);
 
     // Should either succeed or fail gracefully
     match result1 {
@@ -109,19 +112,21 @@ fn verify_liquidity_burn_proportional() {
     assume(total_supply >= 100 && total_supply <= 1_000_000);
     assume(liquidity > 0 && liquidity <= total_supply);
 
-    if let Ok((amount_a, amount_b)) = AmmPool::calculate_liquidity_burn(reserve_a, reserve_b, liquidity, total_supply) {
+    if let Ok((amount_a, amount_b)) =
+        AmmPool::calculate_liquidity_burn(reserve_a, reserve_b, liquidity, total_supply)
+    {
         // Returned amounts should be positive
         assert!(amount_a > 0);
         assert!(amount_b > 0);
-        
+
         // Returned amounts should not exceed reserves
         assert!(amount_a <= reserve_a);
         assert!(amount_b <= reserve_b);
-        
+
         // Verify proportionality (within rounding errors)
         let expected_a = (reserve_a * liquidity) / total_supply;
         let expected_b = (reserve_b * liquidity) / total_supply;
-        
+
         // Allow for ±1 rounding error
         assert!(amount_a == expected_a || amount_a == expected_a + 1 || amount_a == expected_a - 1);
         assert!(amount_b == expected_b || amount_b == expected_b + 1 || amount_b == expected_b - 1);
@@ -135,14 +140,14 @@ fn verify_integer_sqrt() {
     assume(n <= u64::MAX as u128); // Limit range for tractability
 
     let result = super::integer_sqrt(n);
-    
+
     // sqrt(n)² ≤ n < (sqrt(n) + 1)²
     assert!(result * result <= n);
     assert!(n < (result + 1) * (result + 1));
 }
 
 /// Verify swap monotonicity (larger input → larger output)
-#[kani::proof] 
+#[kani::proof]
 fn verify_swap_monotonic() {
     let reserve_in: u128 = any();
     let reserve_out: u128 = any();

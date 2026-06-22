@@ -3,14 +3,14 @@
 //! # AMM Liquidity Pool with Constant Product Formula (x * y = k)
 //!
 //! This contract implements a hardened Automated Market Maker (AMM) using the constant product formula.
-//! 
+//!
 //! ## Core Invariant: Constant Product Formula (k = x * y)
-//! 
-//! The fundamental invariant of this AMM is that the product of the two token reserves 
+//!
+//! The fundamental invariant of this AMM is that the product of the two token reserves
 //! must remain constant (or increase due to fees) across all operations:
-//! 
+//!
 //! **k = reserve_a * reserve_b**
-//! 
+//!
 //! ### Mathematical Properties:
 //! 1. **Conservation**: k never decreases (only increases due to fees)
 //! 2. **Price Discovery**: Price = reserve_a / reserve_b
@@ -22,7 +22,7 @@
 //! ```text
 //! amount_out = (reserve_b * amount_in * (10000 - fee_bps)) / ((reserve_a * 10000) + (amount_in * (10000 - fee_bps)))
 //! ```
-//! 
+//!
 //! This ensures: `(reserve_a + amount_in) * (reserve_b - amount_out) >= k`
 //!
 //! ## Security Features:
@@ -31,7 +31,10 @@
 //! 3. **Overflow Protection**: All arithmetic uses checked operations
 //! 4. **Invariant Enforcement**: k-invariant verified on every operation
 
-use soroban_sdk::{contract, contractimpl, contracttype, contracterror, panic_with_error, token, Address, Env, Symbol};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, panic_with_error, token, Address, Env,
+    Symbol,
+};
 
 // ── Kani Formal Verification ────────────────────────────────────────────────────
 #[cfg(kani)]
@@ -90,21 +93,16 @@ impl AmmPool {
     }
 
     /// Initialize the AMM pool with two tokens and fee rate
-    /// 
+    ///
     /// # Arguments
     /// * `token_a` - Address of first token contract
     /// * `token_b` - Address of second token contract  
     /// * `fee_bps` - Fee in basis points (e.g., 30 = 0.3%)
-    /// 
+    ///
     /// # Security Notes
     /// - Can only be called once
     /// - Fee must be less than 100% (10,000 basis points)
-    pub fn initialize(
-        env: Env,
-        token_a: Address,
-        token_b: Address,
-        fee_bps: u32,
-    ) {
+    pub fn initialize(env: Env, token_a: Address, token_b: Address, fee_bps: u32) {
         // Check if already initialized
         if env.storage().instance().has(&Self::pool_info_key(&env)) {
             panic_with_error!(&env, AmmError::AlreadyInitialized);
@@ -125,21 +123,23 @@ impl AmmPool {
             fee_bps,
         };
 
-        env.storage().instance().set(&Self::pool_info_key(&env), &pool);
+        env.storage()
+            .instance()
+            .set(&Self::pool_info_key(&env), &pool);
     }
 
     /// Execute a token swap with slippage and deadline protection
-    /// 
+    ///
     /// # Arguments
     /// * `user` - User executing the swap
     /// * `token_in` - Address of input token
     /// * `amount_in` - Amount of input tokens
     /// * `min_amount_out` - Minimum acceptable output (slippage protection)
     /// * `deadline` - Transaction deadline timestamp (MEV protection)
-    /// 
+    ///
     /// # Returns
     /// Amount of output tokens received
-    /// 
+    ///
     /// # Security Features
     /// - **Slippage Protection**: Reverts if output < min_amount_out
     /// - **Deadline Protection**: Reverts if current time > deadline
@@ -206,7 +206,8 @@ impl AmmPool {
         }
 
         // Store k-value before swap for invariant check
-        let k_before = pool.reserve_a
+        let k_before = pool
+            .reserve_a
             .checked_mul(pool.reserve_b)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
 
@@ -216,15 +217,21 @@ impl AmmPool {
             let token_a_client = token::Client::new(&env, &pool.token_a);
             token_a_client.transfer(&user, &env.current_contract_address(), &(amount_in as i128));
 
-            // Transfer token B from pool to user  
+            // Transfer token B from pool to user
             let token_b_client = token::Client::new(&env, &pool.token_b);
-            token_b_client.transfer(&env.current_contract_address(), &user, &(amount_out as i128));
+            token_b_client.transfer(
+                &env.current_contract_address(),
+                &user,
+                &(amount_out as i128),
+            );
 
             // Update reserves
-            pool.reserve_a = pool.reserve_a
+            pool.reserve_a = pool
+                .reserve_a
                 .checked_add(amount_in)
                 .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
-            pool.reserve_b = pool.reserve_b
+            pool.reserve_b = pool
+                .reserve_b
                 .checked_sub(amount_out)
                 .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
         } else {
@@ -234,19 +241,26 @@ impl AmmPool {
 
             // Transfer token A from pool to user
             let token_a_client = token::Client::new(&env, &pool.token_a);
-            token_a_client.transfer(&env.current_contract_address(), &user, &(amount_out as i128));
+            token_a_client.transfer(
+                &env.current_contract_address(),
+                &user,
+                &(amount_out as i128),
+            );
 
             // Update reserves
-            pool.reserve_b = pool.reserve_b
+            pool.reserve_b = pool
+                .reserve_b
                 .checked_add(amount_in)
                 .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
-            pool.reserve_a = pool.reserve_a
+            pool.reserve_a = pool
+                .reserve_a
                 .checked_sub(amount_out)
                 .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
         }
 
         // **CRITICAL**: Verify k-invariant is preserved (k should increase due to fees)
-        let k_after = pool.reserve_a
+        let k_after = pool
+            .reserve_a
             .checked_mul(pool.reserve_b)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
 
@@ -255,28 +269,25 @@ impl AmmPool {
         }
 
         // Save updated pool state
-        env.storage().instance().set(&Self::pool_info_key(&env), &pool);
+        env.storage()
+            .instance()
+            .set(&Self::pool_info_key(&env), &pool);
 
         amount_out
     }
     /// Add liquidity to the pool
-    /// 
+    ///
     /// # Arguments
     /// * `user` - User adding liquidity
     /// * `amount_a` - Amount of token A to add
     /// * `amount_b` - Amount of token B to add
-    /// 
+    ///
     /// # Returns
     /// Amount of LP tokens minted
-    /// 
+    ///
     /// # K-Invariant Impact
     /// Adding liquidity increases k proportionally: k_new = k_old × (1 + liquidity_ratio)
-    pub fn add_liquidity(
-        env: Env,
-        user: Address,
-        amount_a: u128,
-        amount_b: u128,
-    ) -> u128 {
+    pub fn add_liquidity(env: Env, user: Address, amount_a: u128, amount_b: u128) -> u128 {
         user.require_auth();
 
         if amount_a == 0 || amount_b == 0 {
@@ -307,13 +318,16 @@ impl AmmPool {
         token_b_client.transfer(&user, &env.current_contract_address(), &(amount_b as i128));
 
         // Update pool state
-        pool.reserve_a = pool.reserve_a
+        pool.reserve_a = pool
+            .reserve_a
             .checked_add(amount_a)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
-        pool.reserve_b = pool.reserve_b
+        pool.reserve_b = pool
+            .reserve_b
             .checked_add(amount_b)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
-        pool.total_supply = pool.total_supply
+        pool.total_supply = pool
+            .total_supply
             .checked_add(liquidity)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
 
@@ -325,23 +339,21 @@ impl AmmPool {
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
         env.storage().persistent().set(&user_key, &new_shares);
 
-        env.storage().instance().set(&Self::pool_info_key(&env), &pool);
+        env.storage()
+            .instance()
+            .set(&Self::pool_info_key(&env), &pool);
 
         liquidity
     }
     /// Remove liquidity from the pool
-    /// 
+    ///
     /// # Arguments  
     /// * `user` - User removing liquidity
     /// * `liquidity` - Amount of LP tokens to burn
-    /// 
+    ///
     /// # Returns
     /// Tuple of (amount_a, amount_b) tokens returned
-    pub fn remove_liquidity(
-        env: Env,
-        user: Address,
-        liquidity: u128,
-    ) -> (u128, u128) {
+    pub fn remove_liquidity(env: Env, user: Address, liquidity: u128) -> (u128, u128) {
         user.require_auth();
 
         if liquidity == 0 {
@@ -378,13 +390,16 @@ impl AmmPool {
         token_b_client.transfer(&env.current_contract_address(), &user, &(amount_b as i128));
 
         // Update pool state
-        pool.reserve_a = pool.reserve_a
+        pool.reserve_a = pool
+            .reserve_a
             .checked_sub(amount_a)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
-        pool.reserve_b = pool.reserve_b
+        pool.reserve_b = pool
+            .reserve_b
             .checked_sub(amount_b)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
-        pool.total_supply = pool.total_supply
+        pool.total_supply = pool
+            .total_supply
             .checked_sub(liquidity)
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
 
@@ -394,7 +409,9 @@ impl AmmPool {
             .unwrap_or_else(|| panic_with_error!(&env, AmmError::CalculationOverflow));
         env.storage().persistent().set(&user_key, &new_shares);
 
-        env.storage().instance().set(&Self::pool_info_key(&env), &pool);
+        env.storage()
+            .instance()
+            .set(&Self::pool_info_key(&env), &pool);
 
         (amount_a, amount_b)
     }
@@ -549,14 +566,14 @@ impl AmmPool {
 
         (amount_a, amount_b)
     }
-    
+
     /// Calculate output amount for a swap using constant product formula
-    /// 
+    ///
     /// # Formula
     /// ```text
     /// output = (reserve_out * amount_in * (10000 - fee_bps)) / ((reserve_in * 10000) + (amount_in * (10000 - fee_bps)))
     /// ```
-    /// 
+    ///
     /// # K-Invariant Preservation
     /// This formula ensures that: (reserve_in + amount_in) * (reserve_out - output) >= reserve_in * reserve_out
     /// The inequality becomes equality when fee_bps = 0, and k increases when fee_bps > 0.
@@ -743,7 +760,7 @@ pub fn calculate_liquidity_burn(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{testutils::{Address as _}, Env};
+    use soroban_sdk::{testutils::Address as _, Env};
 
     #[test]
     fn test_swap_output_calculation() {
@@ -761,7 +778,8 @@ mod tests {
         let fee_bps = 30u128;
 
         let k_before = reserve_in * reserve_out;
-        let amount_out = calculate_swap_output(reserve_in, reserve_out, amount_in, fee_bps).unwrap();
+        let amount_out =
+            calculate_swap_output(reserve_in, reserve_out, amount_in, fee_bps).unwrap();
 
         let new_reserve_in = reserve_in + amount_in;
         let new_reserve_out = reserve_out - amount_out;
