@@ -1,6 +1,7 @@
 pub mod analyze;
 pub mod attest;
 pub mod badge;
+pub mod baseline;
 pub mod diff;
 pub mod init;
 pub mod prove;

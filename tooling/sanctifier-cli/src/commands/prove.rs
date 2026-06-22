@@ -126,13 +126,12 @@ fn print_result(r: &ProofResult) {
     println!("   Solved in {}ms", r.duration_ms);
 
     if let Some(ce) = &r.counterexample {
-        println!("\n   {}", "Counterexample".yellow().bold());
-        println!("   Violated assertion: {}", ce.violated_assertion.bold());
-        println!("   Inputs:");
+        println!("\n   {}", "Counterexample:".yellow().bold());
+        println!("   Call: {}", ce.call_sequence.italic());
+        println!("   Variables:");
         for (k, v) in &ce.variables {
-            println!("     - {k}: {v}");
+            println!("     {k} = {v}");
         }
-        println!("   Trace: {}", ce.call_sequence.italic());
     }
 }
 
